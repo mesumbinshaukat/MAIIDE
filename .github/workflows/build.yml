@@ -1,0 +1,36 @@
+name: Build VSIX
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: npm ci
+        working-directory: ./extensions/maiide-openrouter
+
+      - name: Compile
+        run: npm run compile
+        working-directory: ./extensions/maiide-openrouter
+
+      - name: Package VSIX
+        run: npx @vscode/vsce package
+        working-directory: ./extensions/maiide-openrouter
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: maiide-openrouter-vsix
+          path: ./extensions/maiide-openrouter/*.vsix
