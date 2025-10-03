@@ -1,6 +1,6 @@
 # MAIIDE OpenRouter Extension
 
-- **Name**: MAIIDE (Mesum AI IDE)
+- **Name**: MAIIDE (Mesum AI IDE).
 - **Extension**: OpenRouter integration with dynamic model fetch, chat UI, and agentic system prompt.
 
 ## Features
