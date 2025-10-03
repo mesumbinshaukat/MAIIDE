@@ -8,9 +8,11 @@
 - **Streaming chat**: Live token-by-token responses.
 - **Chat panel**: Webview chat UI that stays open beside your editor.
 - **Context injection**: Optionally include selection and/or full file.
+- **Auto file creation**: Detects code blocks in responses and prompts to save as files (like Cursor/Windsurf).
 - **File ops**: Insert last response at cursor, create new file, replace current file.
 - **Terminal integration**: Run commands in VSCode terminal.
 - **Agent actions**: Enable parsing of [ACTION: run_command: cmd] or [ACTION: create_file: path:content] in responses.
+- **Auto-updates**: Checks GitHub Releases every 30 minutes and prompts to install new versions.
 
 ## Requirements
 - An OpenRouter API key. Get one at https://openrouter.ai
@@ -42,6 +44,7 @@
 - `maiide.systemPrompt`: Optional system prompt.
 - `maiide.context.includeSelection`: Include selection in prompts (default: true).
 - `maiide.context.includeActiveFile`: Include full active file (default: false).
+- `maiide.autoCreateFiles`: Auto-prompt to create files from code blocks (default: true).
 - `maiide.agentActions.enabled`: Enable agent actions (default: false).
 
 ## Troubleshooting
