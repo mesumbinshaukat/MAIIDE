@@ -1,0 +1,90 @@
+{
+  "name": "maiide-openrouter",
+  "displayName": "MAIIDE OpenRouter",
+  "description": "OpenRouter-powered AI assistant for MAIIDE (Mesum AI IDE). Dynamic model listing, chat, and code actions.",
+  "publisher": "maiide",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": ">=1.85.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mesumbinshaukat/MAIIDE.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mesumbinshaukat/MAIIDE/issues"
+  },
+  "homepage": "https://github.com/mesumbinshaukat/MAIIDE",
+  "categories": ["Other"],
+  "main": "./out/extension.js",
+  "dependencies": {},
+  "contributes": {
+    "commands": [
+      { "command": "maiide.openChat", "title": "MAIIDE: Open Chat" },
+      { "command": "maiide.refreshModels", "title": "MAIIDE: Refresh OpenRouter Models" },
+      { "command": "maiide.setApiKey", "title": "MAIIDE: Set OpenRouter API Key" },
+      { "command": "maiide.chatWithSelection", "title": "MAIIDE: Chat With Selection" }
+    ],
+    "configuration": {
+      "title": "MAIIDE",
+      "properties": {
+        "maiide.apiKey": {
+          "type": ["string", "null"],
+          "default": null,
+          "description": "OpenRouter API key. If empty, MAIIDE will use the OPENROUTER_API_KEY environment variable if present.",
+          "markdownDescription": "OpenRouter API key. If empty, MAIIDE will use the `OPENROUTER_API_KEY` environment variable if present.",
+          "scope": "application"
+        },
+        "maiide.model": {
+          "type": "string",
+          "default": "",
+          "description": "Default OpenRouter model id to use (fetched dynamically).",
+          "scope": "application"
+        },
+        "maiide.systemPrompt": {
+          "type": "string",
+          "default": "You are MAIIDE, a rigorous, agentic coding copilot. Always: 1) Review the context and files. 2) Research as needed. 3) Propose a concise plan. 4) Write code/edits. 5) Validate and iterate. Keep responses concise.",
+          "description": "System prompt guiding the agent workflow.",
+          "scope": "application"
+        }
+      }
+    },
+    "menus": {
+      "commandPalette": [
+        { "command": "maiide.openChat", "when": "true" },
+        { "command": "maiide.refreshModels", "when": "true" },
+        { "command": "maiide.setApiKey", "when": "true" }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "maiide",
+          "title": "MAIIDE",
+          "icon": "media/maiide.svg"
+        }
+      ]
+    },
+    "views": {
+      "maiide": [
+        {
+          "id": "maiide.chatView",
+          "name": "Chat"
+        }
+      ]
+    }
+  },
+  "icon": "media/maiide.png",
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -w -p ./",
+    "package": "vsce package",
+    "lint": "echo 'No linter configured'"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.5",
+    "@vscode/vsce": "^2.27.0"
+  }
+}

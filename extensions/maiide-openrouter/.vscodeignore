@@ -1,0 +1,8 @@
+src/**
+**/*.map
+**/*.ts
+.vscode/**
+.vscode-test/**
+node_modules/**/typescript/**
+node_modules/**/@types/**
+node_modules/**/vsce/**
