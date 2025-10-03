@@ -21,16 +21,36 @@ async function ensureClient(): Promise<{ client: OpenRouterClient; config: vscod
 async function processCodeBlocks(text: string) {
   const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
   let match;
+  const blocks = [];
+  
   while ((match = codeBlockRegex.exec(text)) !== null) {
     const lang = match[1] || 'txt';
     const content = match[2].trim();
-    if (content) {
-      const ext = lang === 'html' ? 'html' : lang === 'js' ? 'js' : lang === 'css' ? 'css' : 'txt';
-      const suggestedPath = `index.${ext}`;
-      const confirm = await vscode.window.showInformationMessage(`Create file ${suggestedPath} with code block content?`, 'Create', 'Skip');
-      if (confirm === 'Create') {
-        await createFile(suggestedPath, content);
-      }
+    if (content && content.length > 10) { // Only meaningful code blocks
+      blocks.push({ lang, content });
+    }
+  }
+  
+  if (blocks.length === 0) return;
+  
+  // Auto-create files for code blocks
+  for (const block of blocks) {
+    const ext = block.lang === 'html' ? 'html' : 
+                block.lang === 'javascript' || block.lang === 'js' ? 'js' : 
+                block.lang === 'typescript' || block.lang === 'ts' ? 'ts' :
+                block.lang === 'css' ? 'css' : 
+                block.lang === 'python' || block.lang === 'py' ? 'py' :
+                block.lang === 'json' ? 'json' : 'txt';
+    
+    const defaultPath = `index.${ext}`;
+    const path = await vscode.window.showInputBox({ 
+      prompt: `Save ${block.lang} code as:`, 
+      value: defaultPath,
+      placeHolder: 'Enter file path'
+    });
+    
+    if (path) {
+      await createFile(path, block.content);
     }
   }
 }
@@ -92,6 +112,12 @@ export async function activate(context: vscode.ExtensionContext) {
     const ext = vscode.extensions.getExtension('maiide.maiide-openrouter');
     const version = (ext?.packageJSON?.version as string) || '0.0.0';
     checkForUpdate(version);
+    
+    // Check for updates every 30 minutes
+    const updateInterval = setInterval(() => {
+      checkForUpdate(version);
+    }, 30 * 60 * 1000);
+    context.subscriptions.push({ dispose: () => clearInterval(updateInterval) });
   } catch {}
   let lastAssistantText: string = '';
 
@@ -153,8 +179,10 @@ export async function activate(context: vscode.ExtensionContext) {
           history.push({ role: 'assistant', content: finalText });
           lastAssistantText = finalText;
 
-          // Agent actions
+          // Always process code blocks for file creation
           await processCodeBlocks(finalText);
+          
+          // Agent actions (optional)
           const agentEnabled = config.get<boolean>('agentActions.enabled', false);
           if (agentEnabled) {
             await processAgentActions(finalText);

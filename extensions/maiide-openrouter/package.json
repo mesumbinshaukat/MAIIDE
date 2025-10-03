@@ -62,9 +62,15 @@
           "type": "boolean",
           "default": false,
           "description": "Enable agent actions in assistant responses (e.g., [ACTION: run_command: cmd])."
+        },
+        "maiide.autoCreateFiles": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically prompt to create files from code blocks in responses."
         }
       }
     },
+    "icon": "media/maiide.png",
     "menus": {
       "commandPalette": [
         { "command": "maiide.openChat", "when": "true" },
