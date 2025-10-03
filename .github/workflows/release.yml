@@ -1,0 +1,50 @@
+name: Release VSIX
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: npm install --no-audit --no-fund
+        working-directory: ./extensions/maiide-openrouter
+
+      - name: Compile
+        run: npm run compile
+        working-directory: ./extensions/maiide-openrouter
+
+      - name: Package VSIX
+        run: npx @vscode/vsce package --out maiide-openrouter.vsix
+        working-directory: ./extensions/maiide-openrouter
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./extensions/maiide-openrouter/maiide-openrouter.vsix
+          asset_name: maiide-openrouter.vsix
+          asset_content_type: application/octet-stream

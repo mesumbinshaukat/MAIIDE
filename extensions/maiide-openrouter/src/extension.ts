@@ -13,21 +13,39 @@ async function ensureClient(): Promise<{ client: OpenRouterClient; config: vscod
   const apiKey = getApiKey(config);
   if (!apiKey) {
     const set = await vscode.window.showWarningMessage('OpenRouter API key not set. Add in Settings (MAIIDE: Api Key) or set OPENROUTER_API_KEY env.', 'Open Settings');
-    if (set === 'Open Settings') vscode.commands.executeCommand('workbench.action.openSettings', 'maiide.apiKey');
     return undefined;
   }
   return { client: new OpenRouterClient(apiKey), config };
 }
 
+async function processCodeBlocks(text: string) {
+  const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+  let match;
+  while ((match = codeBlockRegex.exec(text)) !== null) {
+    const lang = match[1] || 'txt';
+    const content = match[2].trim();
+    if (content) {
+      const ext = lang === 'html' ? 'html' : lang === 'js' ? 'js' : lang === 'css' ? 'css' : 'txt';
+      const suggestedPath = `index.${ext}`;
+      const confirm = await vscode.window.showInformationMessage(`Create file ${suggestedPath} with code block content?`, 'Create', 'Skip');
+      if (confirm === 'Create') {
+        await createFile(suggestedPath, content);
+      }
+    }
+  }
+}
+
 async function processAgentActions(text: string) {
   const actions = [];
-  const regex = /\[ACTION:\s*(\w+):\s*(.+?)\]/g;
+  // Parse [ACTION: ...]
+  const actionRegex = /\[ACTION:\s*(\w+):\s*(.+?)\]/g;
   let match;
-  while ((match = regex.exec(text)) !== null) {
+  while ((match = actionRegex.exec(text)) !== null) {
     const type = match[1];
     const args = match[2];
     actions.push({ type, args });
   }
+
   for (const action of actions) {
     if (action.type === 'run_command') {
       const confirm = await vscode.window.showInformationMessage(`Run command: ${action.args}?`, 'Run', 'Skip');
@@ -44,10 +62,17 @@ async function processAgentActions(text: string) {
           await createFile(path, content);
         }
       }
+    } else if (action.type === 'insert_at_cursor') {
+      const content = action.args.trim();
+      if (content) {
+        const editor = vscode.window.activeTextEditor;
+        if (editor) {
+          await editor.edit(edit => edit.insert(editor.selection.active, content));
+        }
+      }
     }
   }
 }
-
 function runCommandInTerminal(cmd: string) {
   const terminal = vscode.window.activeTerminal || vscode.window.createTerminal('MAIIDE');
   terminal.show();
@@ -129,6 +154,7 @@ export async function activate(context: vscode.ExtensionContext) {
           lastAssistantText = finalText;
 
           // Agent actions
+          await processCodeBlocks(finalText);
           const agentEnabled = config.get<boolean>('agentActions.enabled', false);
           if (agentEnabled) {
             await processAgentActions(finalText);
