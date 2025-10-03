@@ -17,7 +17,11 @@ export class OpenRouterClient {
     const res = await fetch(`${this.baseUrl}/models`, {
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        // OpenRouter recommends these headers for routing and attribution
+        'HTTP-Referer': 'https://github.com/mesumbinshaukat/MAIIDE',
+        'X-Title': 'MAIIDE (Mesum AI IDE)'
       }
     });
     if (!res.ok) throw new Error(`OpenRouter listModels failed: ${res.status} ${res.statusText}`);
@@ -36,7 +40,10 @@ export class OpenRouterClient {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'HTTP-Referer': 'https://github.com/mesumbinshaukat/MAIIDE',
+        'X-Title': 'MAIIDE (Mesum AI IDE)'
       },
       body: JSON.stringify(body)
     });
@@ -51,7 +58,10 @@ export class OpenRouterClient {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'HTTP-Referer': 'https://github.com/mesumbinshaukat/MAIIDE',
+        'X-Title': 'MAIIDE (Mesum AI IDE)'
       },
       body: JSON.stringify({ model, messages, stream: true })
     });

@@ -4,6 +4,41 @@ MAIIDE is a rebranded VS Code with an OpenRouter-powered coding copilot. It aims
 
 ## Included
 - `scripts/setup.ps1` — clones microsoft/vscode and applies minimal branding (`nameLong`, `nameShort`, `applicationName`).
+- `extensions/maiide-openrouter/` — MAIIDE OpenRouter extension with streaming chat, model list, context injection, and file ops.
+
+## Install the extension (VSIX)
+- Build from CI or local, then in VS Code: Extensions → … → Install from VSIX…
+- Pick `extensions/maiide-openrouter/maiide-openrouter-<version>.vsix`
+- No need to uninstall previous version; installing updates it.
+
+## Usage
+- Run `MAIIDE: Set OpenRouter API Key` (or set `OPENROUTER_API_KEY`).
+- Run `MAIIDE: Open Chat`.
+- If models are empty: run `MAIIDE: Refresh OpenRouter Models`.
+- Optional context:
+  - `maiide.context.includeSelection` (default: true)
+  - `maiide.context.includeActiveFile` (default: false)
+
+## Features
+- Dynamic models (OpenRouter `/models`).
+- Streaming chat responses.
+- Context injection (selection/file).
+- File operations:
+  - Insert last response at cursor
+  - New file from last response
+  - Replace current file with last response (with confirmation)
+
+## CI
+- Workflow `/.github/workflows/build.yml` builds and uploads a VSIX artifact on every push to `main`.
+
+## Troubleshooting
+- Models missing:
+  - Ensure API key is set, then run `MAIIDE: Refresh OpenRouter Models`.
+  - Network/proxy/VPN can block `https://openrouter.ai/api/v1/models`.
+  - The client sends recommended headers (`Authorization`, `Accept`, `Content-Type`, `HTTP-Referer`, `X-Title`). Update in `extensions/maiide-openrouter/src/api/openrouter.ts` if you fork.
+- Non‑streaming/No replies:
+  - Try a simpler model (e.g., `openrouter/auto`).
+  - Check Output/DevTools for errors.
 - `extensions/maiide-openrouter` — VS Code extension for dynamic model listing and chat via OpenRouter.
 
 ## Requirements
