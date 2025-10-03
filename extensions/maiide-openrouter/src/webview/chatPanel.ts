@@ -102,18 +102,12 @@ export class ChatPanel {
     let streamingEl = null;
     let streamingText = '';
 
-    function md(text){
-      // simple escaping and line breaks only (avoid backtick-based markdown to keep template safe)
-      let html = String(text)
-        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      html = html.replace(/\n/g,'<br/>');
-      return html;
-    }
-
     function addMsg(role, text){
       const div = document.createElement('div');
       div.className = 'msg ' + (role === 'user' ? 'user' : 'assistant');
-      div.innerHTML = md(text);
+      const pre = document.createElement('pre');
+      pre.textContent = String(text || '');
+      div.appendChild(pre);
       messagesEl.appendChild(div);
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
@@ -135,13 +129,16 @@ export class ChatPanel {
         streamingText = '';
         streamingEl = document.createElement('div');
         streamingEl.className = 'msg assistant';
-        streamingEl.innerHTML = '';
+        const pre = document.createElement('pre');
+        pre.textContent = '';
+        streamingEl.appendChild(pre);
         messagesEl.appendChild(streamingEl);
         messagesEl.scrollTop = messagesEl.scrollHeight;
       }
       if (msg.type === 'assistantDelta' && streamingEl) {
         streamingText += String(msg.text || '');
-        streamingEl.innerHTML = md(streamingText);
+        const pre = streamingEl.querySelector('pre');
+        if (pre) pre.textContent = streamingText;
         messagesEl.scrollTop = messagesEl.scrollHeight;
       }
       if (msg.type === 'assistantEnd') {
