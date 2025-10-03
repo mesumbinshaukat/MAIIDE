@@ -19,7 +19,8 @@ async function ensureClient(): Promise<{ client: OpenRouterClient; config: vscod
 }
 
 async function processCodeBlocks(text: string) {
-  const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+  // Match code blocks with optional language identifier
+  const codeBlockRegex = /```(\w+)?\s*\n([\s\S]*?)```/g;
   let match;
   const blocks = [];
   
@@ -31,7 +32,12 @@ async function processCodeBlocks(text: string) {
     }
   }
   
-  if (blocks.length === 0) return;
+  if (blocks.length === 0) {
+    console.log('[MAIIDE] No code blocks found in response');
+    return;
+  }
+  
+  console.log(`[MAIIDE] Found ${blocks.length} code block(s)`);
   
   // Auto-create files for code blocks
   for (const block of blocks) {
@@ -51,6 +57,7 @@ async function processCodeBlocks(text: string) {
     
     if (path) {
       await createFile(path, block.content);
+      vscode.window.showInformationMessage(`Created ${path}`);
     }
   }
 }
