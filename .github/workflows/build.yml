@@ -18,7 +18,7 @@ jobs:
           node-version: 20
 
       - name: Install deps
-        run: npm ci
+        run: npm install --no-audit --no-fund
         working-directory: ./extensions/maiide-openrouter
 
       - name: Compile
