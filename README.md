@@ -25,8 +25,10 @@ MAIIDE is a rebranded VS Code with an OpenRouter-powered coding copilot. It aims
 - Context injection (selection/file).
 - File operations:
   - Insert last response at cursor
-  - New file from last response
+  - New file from last response (with path prompt)
   - Replace current file with last response (with confirmation)
+- Terminal integration: Run commands in VSCode terminal.
+- Agent actions: Parse [ACTION: run_command: cmd] or [ACTION: create_file: path:content] from responses (with confirmation).
 
 ## CI
 - Workflow `/.github/workflows/build.yml` builds and uploads a VSIX artifact on every push to `main`.

@@ -19,6 +19,48 @@ async function ensureClient(): Promise<{ client: OpenRouterClient; config: vscod
   return { client: new OpenRouterClient(apiKey), config };
 }
 
+async function processAgentActions(text: string) {
+  const actions = [];
+  const regex = /\[ACTION:\s*(\w+):\s*(.+?)\]/g;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    const type = match[1];
+    const args = match[2];
+    actions.push({ type, args });
+  }
+  for (const action of actions) {
+    if (action.type === 'run_command') {
+      const confirm = await vscode.window.showInformationMessage(`Run command: ${action.args}?`, 'Run', 'Skip');
+      if (confirm === 'Run') {
+        runCommandInTerminal(action.args);
+      }
+    } else if (action.type === 'create_file') {
+      const parts = action.args.split(':', 2);
+      if (parts.length === 2) {
+        const path = parts[0].trim();
+        const content = parts[1].trim();
+        const confirm = await vscode.window.showInformationMessage(`Create file ${path} with content?`, 'Create', 'Skip');
+        if (confirm === 'Create') {
+          await createFile(path, content);
+        }
+      }
+    }
+  }
+}
+
+function runCommandInTerminal(cmd: string) {
+  const terminal = vscode.window.activeTerminal || vscode.window.createTerminal('MAIIDE');
+  terminal.show();
+  terminal.sendText(cmd);
+}
+
+async function createFile(path: string, content: string) {
+  const uri = vscode.Uri.file(path);
+  await vscode.workspace.fs.writeFile(uri, Buffer.from(content, 'utf8'));
+  const doc = await vscode.workspace.openTextDocument(uri);
+  await vscode.window.showTextDocument(doc);
+}
+
 export async function activate(context: vscode.ExtensionContext) {
   // Check for updates (GitHub latest release)
   try {
@@ -85,6 +127,12 @@ export async function activate(context: vscode.ExtensionContext) {
           const finalText = acc || '(no content)';
           history.push({ role: 'assistant', content: finalText });
           lastAssistantText = finalText;
+
+          // Agent actions
+          const agentEnabled = config.get<boolean>('agentActions.enabled', false);
+          if (agentEnabled) {
+            await processAgentActions(finalText);
+          }
         } catch (e: any) {
           panel.postMessage({ type: 'error', text: e?.message || String(e) });
         }
@@ -136,8 +184,9 @@ export async function activate(context: vscode.ExtensionContext) {
   // New file from last response
   const newFileFromLast = vscode.commands.registerCommand('maiide.newFileFromLastResponse', async () => {
     if (!lastAssistantText) return vscode.window.showInformationMessage('No assistant response to create file from.');
-    const doc = await vscode.workspace.openTextDocument({ content: lastAssistantText, language: 'plaintext' });
-    await vscode.window.showTextDocument(doc, { preview: false });
+    const path = await vscode.window.showInputBox({ prompt: 'Enter file path' });
+    if (!path) return;
+    await createFile(path, lastAssistantText);
   });
 
   // Replace current file with last response
@@ -154,6 +203,13 @@ export async function activate(context: vscode.ExtensionContext) {
     await editor.edit(edit => edit.replace(fullRange, lastAssistantText));
   });
 
+  // Run terminal command
+  const runTerminalCmd = vscode.commands.registerCommand('maiide.runTerminalCommand', async () => {
+    const cmd = await vscode.window.showInputBox({ prompt: 'Enter command to run' });
+    if (!cmd) return;
+    runCommandInTerminal(cmd);
+  });
+
   context.subscriptions.push(
     openChat,
     refreshModels,
@@ -161,7 +217,8 @@ export async function activate(context: vscode.ExtensionContext) {
     chatWithSelection,
     insertAtCursor,
     newFileFromLast,
-    replaceCurrent
+    replaceCurrent,
+    runTerminalCmd
   );
 }
 

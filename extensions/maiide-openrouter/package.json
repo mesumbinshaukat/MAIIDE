@@ -25,7 +25,8 @@
       { "command": "maiide.chatWithSelection", "title": "MAIIDE: Chat With Selection" },
       { "command": "maiide.insertLastResponseAtCursor", "title": "MAIIDE: Insert Last Response at Cursor" },
       { "command": "maiide.newFileFromLastResponse", "title": "MAIIDE: New File from Last Response" },
-      { "command": "maiide.replaceCurrentFileWithLastResponse", "title": "MAIIDE: Replace Current File with Last Response" }
+      { "command": "maiide.replaceCurrentFileWithLastResponse", "title": "MAIIDE: Replace Current File with Last Response" },
+      { "command": "maiide.runTerminalCommand", "title": "MAIIDE: Run Terminal Command" }
     ],
     "configuration": {
       "title": "MAIIDE",
@@ -56,6 +57,11 @@
           "type": "boolean",
           "default": false,
           "description": "Include full active file content as context (may be large)."
+        },
+        "maiide.agentActions.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable agent actions in assistant responses (e.g., [ACTION: run_command: cmd])."
         }
       }
     },
