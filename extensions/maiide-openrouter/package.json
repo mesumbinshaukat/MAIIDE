@@ -17,13 +17,15 @@
   "homepage": "https://github.com/mesumbinshaukat/MAIIDE",
   "categories": ["Other"],
   "main": "./out/extension.js",
-  "dependencies": {},
   "contributes": {
     "commands": [
       { "command": "maiide.openChat", "title": "MAIIDE: Open Chat" },
       { "command": "maiide.refreshModels", "title": "MAIIDE: Refresh OpenRouter Models" },
       { "command": "maiide.setApiKey", "title": "MAIIDE: Set OpenRouter API Key" },
-      { "command": "maiide.chatWithSelection", "title": "MAIIDE: Chat With Selection" }
+      { "command": "maiide.chatWithSelection", "title": "MAIIDE: Chat With Selection" },
+      { "command": "maiide.insertLastResponseAtCursor", "title": "MAIIDE: Insert Last Response at Cursor" },
+      { "command": "maiide.newFileFromLastResponse", "title": "MAIIDE: New File from Last Response" },
+      { "command": "maiide.replaceCurrentFileWithLastResponse", "title": "MAIIDE: Replace Current File with Last Response" }
     ],
     "configuration": {
       "title": "MAIIDE",
@@ -37,15 +39,23 @@
         },
         "maiide.model": {
           "type": "string",
-          "default": "",
-          "description": "Default OpenRouter model id to use (fetched dynamically).",
-          "scope": "application"
+          "default": "openrouter/auto",
+          "description": "Default model to use for chat requests."
         },
         "maiide.systemPrompt": {
           "type": "string",
-          "default": "You are MAIIDE, a rigorous, agentic coding copilot. Always: 1) Review the context and files. 2) Research as needed. 3) Propose a concise plan. 4) Write code/edits. 5) Validate and iterate. Keep responses concise.",
-          "description": "System prompt guiding the agent workflow.",
-          "scope": "application"
+          "default": "",
+          "description": "Optional system prompt to steer the assistant."
+        },
+        "maiide.context.includeSelection": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include current editor selection as context in prompts."
+        },
+        "maiide.context.includeActiveFile": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include full active file content as context (may be large)."
         }
       }
     },

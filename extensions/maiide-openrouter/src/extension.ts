@@ -26,6 +26,8 @@ export async function activate(context: vscode.ExtensionContext) {
     const version = (ext?.packageJSON?.version as string) || '0.0.0';
     checkForUpdate(version);
   } catch {}
+  let lastAssistantText: string = '';
+
   const openChat = vscode.commands.registerCommand('maiide.openChat', async () => {
     const env = await ensureClient();
     if (!env) return;
@@ -44,10 +46,33 @@ export async function activate(context: vscode.ExtensionContext) {
     const systemPrompt = config.get<string>('systemPrompt') || '';
     const history: ChatMessage[] = systemPrompt ? [{ role: 'system', content: systemPrompt }] : [];
 
+    function buildContextAugment(): string {
+      const includeSel = config.get<boolean>('context.includeSelection', true);
+      const includeFile = config.get<boolean>('context.includeActiveFile', false);
+      const editor = vscode.window.activeTextEditor;
+      let ctx = '';
+      if (editor) {
+        if (includeSel) {
+          const sel = editor.document.getText(editor.selection);
+          if (sel) ctx += `\n\n[Selection]\n${sel}`;
+        }
+        if (includeFile) {
+          const all = editor.document.getText();
+          const filePath = editor.document.uri.fsPath;
+          ctx += `\n\n[File: ${filePath}]\n${all}`;
+        }
+      }
+      return ctx.trim();
+    }
+
     panel.onDidReceiveMessage(async (msg) => {
       if (msg.type === 'chat') {
         const model = msg.model || config.get<string>('model') || 'openrouter/auto';
-        const userText = String(msg.text || '');
+        let userText = String(msg.text || '');
+        const ctx = buildContextAugment();
+        if (ctx) {
+          userText += `\n\n[Context]\n${ctx}`;
+        }
         history.push({ role: 'user', content: userText });
         try {
           panel.postMessage({ type: 'assistantStart' });
@@ -59,6 +84,7 @@ export async function activate(context: vscode.ExtensionContext) {
           panel.postMessage({ type: 'assistantEnd' });
           const finalText = acc || '(no content)';
           history.push({ role: 'assistant', content: finalText });
+          lastAssistantText = finalText;
         } catch (e: any) {
           panel.postMessage({ type: 'error', text: e?.message || String(e) });
         }
@@ -97,7 +123,46 @@ export async function activate(context: vscode.ExtensionContext) {
     panel.postMessage({ type: 'prefill', text: selText });
   });
 
-  context.subscriptions.push(openChat, refreshModels, setApiKey, chatWithSelection);
+  // Insert last response at cursor
+  const insertAtCursor = vscode.commands.registerCommand('maiide.insertLastResponseAtCursor', async () => {
+    if (!lastAssistantText) return vscode.window.showInformationMessage('No assistant response to insert.');
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return vscode.window.showInformationMessage('No active editor.');
+    await editor.edit(edit => {
+      edit.insert(editor.selection.active, lastAssistantText);
+    });
+  });
+
+  // New file from last response
+  const newFileFromLast = vscode.commands.registerCommand('maiide.newFileFromLastResponse', async () => {
+    if (!lastAssistantText) return vscode.window.showInformationMessage('No assistant response to create file from.');
+    const doc = await vscode.workspace.openTextDocument({ content: lastAssistantText, language: 'plaintext' });
+    await vscode.window.showTextDocument(doc, { preview: false });
+  });
+
+  // Replace current file with last response
+  const replaceCurrent = vscode.commands.registerCommand('maiide.replaceCurrentFileWithLastResponse', async () => {
+    if (!lastAssistantText) return vscode.window.showInformationMessage('No assistant response to apply.');
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return vscode.window.showInformationMessage('No active editor.');
+    const confirm = await vscode.window.showWarningMessage('Replace entire file with the last assistant response?', 'Replace', 'Cancel');
+    if (confirm !== 'Replace') return;
+    const fullRange = new vscode.Range(
+      editor.document.positionAt(0),
+      editor.document.positionAt(editor.document.getText().length)
+    );
+    await editor.edit(edit => edit.replace(fullRange, lastAssistantText));
+  });
+
+  context.subscriptions.push(
+    openChat,
+    refreshModels,
+    setApiKey,
+    chatWithSelection,
+    insertAtCursor,
+    newFileFromLast,
+    replaceCurrent
+  );
 }
 
 export function deactivate() {}
