@@ -46,137 +46,110 @@ export class ChatPanel {
       const d = this.disposables.pop();
       try { d?.dispose(); } catch {}
     }
-    this.panel.dispose();
   }
 
   private getHtml() {
     const nonce = String(Math.random()).slice(2);
     return `<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; style-src 'unsafe-inline' ; script-src 'nonce-${nonce}';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MAIIDE Chat</title>
   <style>
-    body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); background: var(--vscode-editor-background); margin: 0; }
-    .container { display: flex; flex-direction: column; height: 100vh; }
-    .toolbar { display: flex; gap: 8px; padding: 8px 10px; align-items: center; border-bottom: 1px solid var(--vscode-panel-border); }
-    .toolbar input[type=text] { flex: 1; padding: 6px 8px; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); border-radius: 4px; }
-    .messages { flex: 1; overflow: auto; padding: 12px; }
-    .msg { margin: 8px 0; padding: 10px 12px; border-radius: 8px; line-height: 1.5; }
-    .user { background: rgba(11,92,255,.12); }
-    .assistant { background: rgba(255,255,255,.06); }
-    .controls { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--vscode-panel-border); }
-    input, select, button { font-size: 13px; }
-    select { min-width: 280px; }
-    input[type=text].prompt { flex: 1; padding: 8px; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); border-radius: 4px; }
-    button { padding: 8px 12px; }
-    .status { font-size: 12px; opacity: .7; padding: 6px 10px; }
-    /* markdown */
-    .msg pre { background: #00000033; padding: 10px; overflow: auto; border-radius: 6px; }
-    .msg code { font-family: var(--vscode-editor-font-family, monospace); }
+    body{margin:0;font-family:var(--vscode-font-family);color:var(--vscode-foreground);background:var(--vscode-editor-background)}
+    .row{display:flex;gap:8px;padding:8px;border-bottom:1px solid var(--vscode-panel-border)}
+    #messages{height:calc(100vh - 120px);overflow:auto;padding:8px}
+    .msg{margin:6px 0;padding:8px;border-radius:6px}
+    .user{background:rgba(11,92,255,.12)}
+    .assistant{background:rgba(255,255,255,.06)}
   </style>
-</head>
-<body>
-  <div class="container">
-    <div class="toolbar">
-      <input id="modelFilter" type="text" placeholder="Filter models..." />
+  </head>
+  <body>
+    <div class="row">
+      <input id="modelFilter" placeholder="Filter models..."/>
       <select id="model"></select>
     </div>
-    <div class="messages" id="messages"></div>
-    <div class="controls">
-      <input class="prompt" id="prompt" type="text" placeholder="Ask MAIIDE to review, research, or code..." />
+    <div id="messages"></div>
+    <div class="row" style="border-top:1px solid var(--vscode-panel-border)">
+      <input id="prompt" placeholder="Ask MAIIDE..." style="flex:1"/>
       <button id="send">Send</button>
     </div>
-    <div class="status" id="status"></div>
-  </div>
-  <script nonce="${nonce}">
-    const vscode = acquireVsCodeApi();
-    const messagesEl = document.getElementById('messages');
-    const modelEl = document.getElementById('model');
-    const modelFilterEl = document.getElementById('modelFilter');
-    const promptEl = document.getElementById('prompt');
-    const sendBtn = document.getElementById('send');
-    const statusEl = document.getElementById('status');
-    let streamingEl = null;
-    let streamingText = '';
+    <div id="status" style="padding:6px 8px;opacity:.7;font-size:12px"></div>
+    <script nonce="${nonce}">
+      const vscode = acquireVsCodeApi();
+      const messagesEl = document.getElementById('messages');
+      const modelEl = document.getElementById('model');
+      const modelFilterEl = document.getElementById('modelFilter');
+      const promptEl = document.getElementById('prompt');
+      const sendBtn = document.getElementById('send');
+      const statusEl = document.getElementById('status');
+      let streamingEl = null; let streamingText='';
 
-    function addMsg(role, text){
-      const div = document.createElement('div');
-      div.className = 'msg ' + (role === 'user' ? 'user' : 'assistant');
-      const pre = document.createElement('pre');
-      pre.textContent = String(text || '');
-      div.appendChild(pre);
-      messagesEl.appendChild(div);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    window.addEventListener('message', (event) => {
-      const msg = event.data;
-      if (msg.type === 'models') {
-        modelEl.innerHTML = '';
-        const models = (msg.models || []);
-        models.forEach(m => {
-          const opt = document.createElement('option');
-          opt.value = m.id; opt.textContent = m.name || m.id;
-          modelEl.appendChild(opt);
-        });
-        if (msg.defaultModel) modelEl.value = msg.defaultModel;
-      }
-      if (msg.type === 'assistant') addMsg('assistant', msg.text);
-      if (msg.type === 'assistantStart') {
-        streamingText = '';
-        streamingEl = document.createElement('div');
-        streamingEl.className = 'msg assistant';
-        const pre = document.createElement('pre');
-        pre.textContent = '';
-        streamingEl.appendChild(pre);
-        messagesEl.appendChild(streamingEl);
+      function addMsg(role, text){
+        const div=document.createElement('div');
+        div.className='msg ' + (role==='user'?'user':'assistant');
+        const pre=document.createElement('pre');
+        pre.textContent=String(text||'');
+        div.appendChild(pre);
+        messagesEl.appendChild(div);
         messagesEl.scrollTop = messagesEl.scrollHeight;
       }
-      if (msg.type === 'assistantDelta' && streamingEl) {
-        streamingText += String(msg.text || '');
-        const pre = streamingEl.querySelector('pre');
-        if (pre) pre.textContent = streamingText;
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-      }
-      if (msg.type === 'assistantEnd') {
-        streamingEl = null; streamingText = '';
-      }
-      if (msg.type === 'error') addMsg('assistant', 'Error: ' + msg.text);
-      if (msg.type === 'prefill') {
-        promptEl.value = msg.text || '';
-        promptEl.focus();
-      }
-    });
 
-    // (copy feature removed to keep template minimal and safe)
+      window.addEventListener('message', (event)=>{
+        const msg = event.data;
+        if (msg && msg.type==='models'){
+          modelEl.innerHTML='';
+          const arr = msg.models||[];
+          for (const m of arr){
+            const opt=document.createElement('option');
+            opt.value = m.id; opt.textContent = m.name || m.id;
+            modelEl.appendChild(opt);
+          }
+          if (msg.defaultModel) modelEl.value = msg.defaultModel;
+        }
+        if (msg && msg.type==='assistant') addMsg('assistant', msg.text);
+        if (msg && msg.type==='assistantStart'){
+          streamingText='';
+          streamingEl=document.createElement('div');
+          streamingEl.className='msg assistant';
+          const pre=document.createElement('pre'); pre.textContent='';
+          streamingEl.appendChild(pre);
+          messagesEl.appendChild(streamingEl);
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+        if (msg && msg.type==='assistantDelta' && streamingEl){
+          streamingText += String(msg.text||'');
+          const pre = streamingEl.querySelector('pre'); if (pre) pre.textContent = streamingText;
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+        if (msg && msg.type==='assistantEnd'){ streamingEl=null; streamingText=''; }
+        if (msg && msg.type==='error') addMsg('assistant', 'Error: ' + msg.text);
+        if (msg && msg.type==='prefill'){ promptEl.value = msg.text || ''; promptEl.focus(); }
+      });
 
-    // filter models
-    modelFilterEl.addEventListener('input', () => {
-      const q = modelFilterEl.value.toLowerCase();
-      for (const opt of modelEl.options){
-        opt.hidden = q && !opt.textContent.toLowerCase().includes(q);
-      }
-    });
+      modelFilterEl.addEventListener('input', ()=>{
+        const q=(modelFilterEl.value||'').toLowerCase();
+        for (const opt of modelEl.options){
+          const t=(opt.textContent||'').toLowerCase();
+          opt.hidden = q && !t.includes(q);
+        }
+      });
 
-    sendBtn.addEventListener('click', () => {
-      const text = promptEl.value.trim();
-      if (!text) return;
-      addMsg('user', text);
-      statusEl.textContent = 'Thinking...';
-      vscode.postMessage({ type: 'chat', model: modelEl.value, text });
-      promptEl.value = '';
-    });
+      sendBtn.addEventListener('click', ()=>{
+        const text=(promptEl.value||'').trim();
+        if (!text) return;
+        addMsg('user', text);
+        statusEl.textContent='Thinking...';
+        vscode.postMessage({ type:'chat', model: modelEl.value, text });
+        promptEl.value='';
+      });
 
-    // clear status on response
-    window.addEventListener('message', (event) => {
-      const t = event.data?.type;
-      if (t === 'assistant' || t === 'error') statusEl.textContent = '';
-    });
-  </script>
-</body>
+      window.addEventListener('message', (event)=>{
+        const t = event.data && event.data.type;
+        if (t==='assistant' || t==='assistantEnd' || t==='error') statusEl.textContent='';
+      });
+    </script>
+  </body>
 </html>`;
-  }
-}
